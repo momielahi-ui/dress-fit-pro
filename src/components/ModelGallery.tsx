@@ -12,7 +12,7 @@ const models = [
 
 interface ModelGalleryProps {
   selected: string | null;
-  onSelect: (src: string) => void;
+  onSelect: (src: string) => void | Promise<void>;
 }
 
 export function ModelGallery({ selected, onSelect }: ModelGalleryProps) {
@@ -28,7 +28,9 @@ export function ModelGallery({ selected, onSelect }: ModelGalleryProps) {
             key={model.id}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => onSelect(model.src)}
+            onClick={() => {
+              void onSelect(model.src);
+            }}
             className={`relative overflow-hidden rounded-lg glass glass-hover transition-all ${
               selected === model.src ? "ring-2 ring-primary glow-primary" : ""
             }`}
