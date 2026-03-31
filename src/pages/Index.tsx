@@ -5,7 +5,7 @@ import { ModelGallery } from "@/components/ModelGallery";
 import { UploadZone } from "@/components/UploadZone";
 import { ScannerOverlay } from "@/components/ScannerOverlay";
 import { ResultViewer } from "@/components/ResultViewer";
-import { startTryOn, checkStatus, fileToDataUrl, VtonStatus } from "@/lib/vton-api";
+import { startTryOn, fileToDataUrl, VtonStatus } from "@/lib/vton-api";
 import { toast } from "sonner";
 
 type Category = "upper_body" | "lower_body" | "dresses";
