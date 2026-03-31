@@ -19,14 +19,41 @@ const categories: { value: Category; label: string }[] = [
 export default function Index() {
   const [personImg, setPersonImg] = useState<string | null>(null);
   const [garmentImg, setGarmentImg] = useState<string | null>(null);
+  const [selectedModelSrc, setSelectedModelSrc] = useState<string | null>(null);
   const [category, setCategory] = useState<Category>("upper_body");
   const [status, setStatus] = useState<VtonStatus | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
 
+  const assetUrlToDataUrl = useCallback(async (url: string) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error("Failed to load the selected model image.");
+    }
+
+    const blob = await response.blob();
+    const file = new File([blob], "model-image", { type: blob.type || "image/jpeg" });
+    return fileToDataUrl(file);
+  }, []);
+
   const handlePersonFile = useCallback(async (file: File) => {
     const url = await fileToDataUrl(file);
+    setSelectedModelSrc(null);
     setPersonImg(url);
   }, []);
+
+  const handleSelectModel = useCallback(
+    async (src: string) => {
+      try {
+        const url = await assetUrlToDataUrl(src);
+        setSelectedModelSrc(src);
+        setPersonImg(url);
+      } catch (error) {
+        console.error("Failed to load model image:", error);
+        toast.error("Failed to load the selected model image.");
+      }
+    },
+    [assetUrlToDataUrl],
+  );
 
   const handleGarmentFile = useCallback(async (file: File) => {
     const url = await fileToDataUrl(file);
@@ -67,6 +94,7 @@ export default function Index() {
   const handleReset = () => {
     setPersonImg(null);
     setGarmentImg(null);
+    setSelectedModelSrc(null);
     setResultUrl(null);
     setStatus(null);
   };
