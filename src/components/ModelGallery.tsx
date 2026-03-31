@@ -1,13 +1,35 @@
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
+import { Avatar3D } from "@/components/Avatar3D";
 import modelMale from "@/assets/model-male.jpg";
 import modelFemale from "@/assets/model-female.jpg";
 import modelAlt from "@/assets/model-alt.jpg";
 
 const models = [
-  { id: "male", label: "Model A", src: modelMale },
-  { id: "female", label: "Model B", src: modelFemale },
-  { id: "alt", label: "Model C", src: modelAlt },
+  {
+    id: "male",
+    label: "Model A",
+    src: modelMale,
+    skinColor: "#c68642",
+    shirtColor: "#1a1a2e",
+    pantsColor: "#16213e",
+  },
+  {
+    id: "female",
+    label: "Model B",
+    src: modelFemale,
+    skinColor: "#f1c27d",
+    shirtColor: "#e74c3c",
+    pantsColor: "#2c3e50",
+  },
+  {
+    id: "alt",
+    label: "Model C",
+    src: modelAlt,
+    skinColor: "#8d5524",
+    shirtColor: "#27ae60",
+    pantsColor: "#34495e",
+  },
 ];
 
 interface ModelGalleryProps {
@@ -20,7 +42,7 @@ export function ModelGallery({ selected, onSelect }: ModelGalleryProps) {
     <div className="space-y-3">
       <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
         <User size={14} />
-        Choose a Model
+        Choose a 3D Model
       </h3>
       <div className="grid grid-cols-3 gap-3">
         {models.map((model) => (
@@ -35,14 +57,15 @@ export function ModelGallery({ selected, onSelect }: ModelGalleryProps) {
               selected === model.src ? "ring-2 ring-primary glow-primary" : ""
             }`}
           >
-            <img
-              src={model.src}
-              alt={model.label}
-              className="w-full aspect-[3/4] object-cover"
-              loading="lazy"
+            <Avatar3D
+              skinColor={model.skinColor}
+              shirtColor={model.shirtColor}
+              pantsColor={model.pantsColor}
             />
             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-background/90 to-transparent p-2">
-              <span className="text-xs font-display font-medium text-foreground">{model.label}</span>
+              <span className="text-xs font-display font-medium text-foreground">
+                {model.label}
+              </span>
             </div>
           </motion.button>
         ))}
