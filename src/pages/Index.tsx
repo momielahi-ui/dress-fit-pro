@@ -166,7 +166,7 @@ export default function Index() {
                     or select a model
                   </p>
                 </div>
-                <ModelGallery selected={personImg} onSelect={setPersonImg} />
+                <ModelGallery selected={selectedModelSrc} onSelect={handleSelectModel} />
               </div>
 
               {/* Right: Garment */}
