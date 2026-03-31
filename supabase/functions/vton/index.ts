@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -20,52 +20,75 @@ serve(async (req) => {
       });
     }
 
-    const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN");
-    if (!REPLICATE_API_TOKEN) {
-      return new Response(JSON.stringify({ error: "REPLICATE_API_TOKEN not configured" }), {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create prediction
-    const createRes = await fetch("https://api.replicate.com/v1/predictions", {
+    const categoryDesc = category === "lower_body" ? "lower body (pants/skirt)" 
+      : category === "dresses" ? "full dress" 
+      : "upper body (top/shirt/jacket)";
+
+    const prompt = `You are a virtual try-on assistant. Take the person in the first image and dress them in the garment shown in the second image. The garment is for the ${categoryDesc}. Generate a realistic photo of the person wearing this exact garment, maintaining the person's pose, body shape, face, and background. The garment should fit naturally on the person.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${REPLICATE_API_TOKEN}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
-        Prefer: "wait",
       },
       body: JSON.stringify({
-        version: "0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985",
-        input: {
-          human_img,
-          garm_img,
-          category: category || "upper_body",
-          garment_des: "A garment",
-        },
+        model: "google/gemini-3-pro-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: human_img } },
+              { type: "image_url", image_url: { url: garm_img } },
+            ],
+          },
+        ],
+        modalities: ["image", "text"],
       }),
     });
 
-    const prediction = await createRes.json();
-
-    if (!createRes.ok) {
-      console.error("Replicate error:", prediction);
-      return new Response(JSON.stringify({ error: prediction.detail || "Failed to create prediction" }), {
-        status: createRes.status,
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limited. Please try again in a moment." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const errText = await response.text();
+      console.error("AI gateway error:", response.status, errText);
+      return new Response(JSON.stringify({ error: "AI generation failed" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // If Prefer: wait worked, we have the result
-    if (prediction.status === "succeeded") {
-      return new Response(JSON.stringify({ status: "succeeded", output: prediction.output }), {
+    const data = await response.json();
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+    if (!imageUrl) {
+      console.error("No image in response:", JSON.stringify(data).slice(0, 500));
+      return new Response(JSON.stringify({ error: "No image was generated. Try a different photo." }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Otherwise return prediction ID for polling
-    return new Response(JSON.stringify({ status: prediction.status, id: prediction.id }), {
+    return new Response(JSON.stringify({ status: "succeeded", output: imageUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

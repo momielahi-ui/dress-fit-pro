@@ -5,7 +5,7 @@ import { ModelGallery } from "@/components/ModelGallery";
 import { UploadZone } from "@/components/UploadZone";
 import { ScannerOverlay } from "@/components/ScannerOverlay";
 import { ResultViewer } from "@/components/ResultViewer";
-import { startTryOn, checkStatus, fileToDataUrl, VtonStatus } from "@/lib/vton-api";
+import { startTryOn, fileToDataUrl, VtonStatus } from "@/lib/vton-api";
 import { toast } from "sonner";
 
 type Category = "upper_body" | "lower_body" | "dresses";
@@ -43,6 +43,7 @@ export default function Index() {
     setResultUrl(null);
 
     try {
+      setStatus("processing");
       const result = await startTryOn(personImg, garmentImg, category);
 
       if (result.status === "succeeded" && result.output) {
@@ -50,27 +51,12 @@ export default function Index() {
         setResultUrl(output);
         setStatus(null);
         toast.success("Try-on complete!");
-        return;
-      }
-
-      if (result.id) {
-        setStatus("processing");
-        // Poll for status
-        const poll = async () => {
-          const check = await checkStatus(result.id!);
-          if (check.status === "succeeded" && check.output) {
-            const output = Array.isArray(check.output) ? check.output[0] : check.output;
-            setResultUrl(output);
-            setStatus(null);
-            toast.success("Try-on complete!");
-          } else if (check.status === "failed") {
-            setStatus(null);
-            toast.error(check.error || "Generation failed.");
-          } else {
-            setTimeout(poll, 3000);
-          }
-        };
-        setTimeout(poll, 3000);
+      } else if (result.error) {
+        setStatus(null);
+        toast.error(result.error);
+      } else {
+        setStatus(null);
+        toast.error("No image was generated. Try different photos.");
       }
     } catch (err: any) {
       setStatus(null);
